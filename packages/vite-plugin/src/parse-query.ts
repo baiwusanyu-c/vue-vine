@@ -8,6 +8,10 @@ export interface VineQuery {
 }
 type VineQueryRaw = Record<keyof VineQuery, string>
 
+/**
+ * 解析模块 id，切分 query 参数
+ * @param id
+ */
 export function parseQuery(id: string) {
   const [fileId, queryRawStr] = id.split('?', 2)
   const rawQuery = Object.fromEntries(new URLSearchParams(queryRawStr)) as VineQueryRaw

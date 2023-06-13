@@ -2,6 +2,13 @@ import type { HmrContext, ModuleNode } from 'vite'
 import { parseQuery } from './parse-query'
 import { QUERY_TYPE_STYLE } from './constants'
 
+/**
+ * 热更新方法，
+ * 这里只针对 css 的模块进行整个 css模块、
+ * vine.ts相关模块进行更新
+ * @param modules
+ */
+// TODO: 模块精准更新
 export function handleHotUpdate(
   { modules }: HmrContext,
 ): ModuleNode[] {
