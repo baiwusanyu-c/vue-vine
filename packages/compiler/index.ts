@@ -101,7 +101,8 @@ export function compileVineTypeScriptFile(
   compilerHooks.onBindFileCtx?.(fileId, vineFileCtx)
 
   // 运用规则，找到这个 .vine.ts 中的所有 vfc
-  // TODO
+  // 一个函数中如果包含有模板 vine`<xxxx></xxxx>`
+  // 则被是被为是一个 vfc
   const vineFnCompDecls = sgRoot.findAll(
     ruleVineFunctionComponentDeclaration,
   )

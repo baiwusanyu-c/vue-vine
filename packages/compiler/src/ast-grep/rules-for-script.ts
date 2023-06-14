@@ -127,6 +127,7 @@ export const vineScriptRuleUtils = {
       },
     ],
   },
+  // 识别 vine`<div></div>` 的匹配规则
   vineTaggedTemplateString: {
     kind: 'call_expression',
     all: [
@@ -158,38 +159,47 @@ export const vineScriptRuleUtils = {
       },
     ],
   },
+  // 匹配名称式的函数声明
   vineNormalFunctionDeclaration: {
     kind: 'function_declaration',
     has: {
       field: 'body',
       has: {
         stopBy: 'end',
+        // 识别 vine`<div></div>` 的匹配规则
         matches: 'vineTaggedTemplateString',
       },
     },
   },
+  // 变量式的函数声明
   vineVariableFunctionDeclaration: {
     kind: 'lexical_declaration',
     has: {
       stopBy: 'end',
       any: [
         {
+          // 箭头函数
           kind: 'arrow_function',
           has: {
             stopBy: 'end',
+            // 识别 vine`<div></div>` 的匹配规则
             matches: 'vineTaggedTemplateString',
           },
         },
         {
+          // 普通函数
           kind: 'function',
           has: {
             stopBy: 'end',
+            // 识别 vine`<div></div>` 的匹配规则
             matches: 'vineTaggedTemplateString',
           },
         },
       ],
     },
   },
+
+  // 匹配名称式的函数声明和变量式的函数声明
   vineFunctionComponentMatching: {
     any: [
       {
@@ -200,8 +210,15 @@ export const vineScriptRuleUtils = {
       },
     ],
   },
+  // vfc 的声明检测规则，用于从 .vine.ts 源码中找到所有
+  // vfc 的声明
+  // e.g
+  // export function foo() {}
+  // const foo = () => {}
   vineFunctionComponentDeclaration: {
+    // any 是匹配其数组找那个任意规则的意思
     any: [
+      // 源码中没有 export 且能够匹配 规则 'vineFunctionComponentMatching'
       {
         // No export
         matches: 'vineFunctionComponentMatching',
@@ -211,6 +228,7 @@ export const vineScriptRuleUtils = {
           },
         },
       },
+      // 源码中有 export 且声明域（declaration）能够匹配 规则 'vineFunctionComponentMatching'
       {
         kind: 'export_statement',
         has: {

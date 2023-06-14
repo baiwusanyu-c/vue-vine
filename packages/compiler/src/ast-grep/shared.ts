@@ -9,6 +9,14 @@ export function selectUtilRules<U extends Record<string, any>>(ruleUtilsObj: U, 
   ) as Partial<U>
 }
 
+/**
+ * 创建规则对象
+ * @param ruleUtilsObj 规则字典
+ * @param utilName  规则名称
+ * @param utilsSpec
+ * @param extraRules
+ * @param reverse
+ */
 export function fastCreateMatchRuleByUtils<U extends Record<string, any>>(
   ruleUtilsObj: U,
   utilName: keyof U,
