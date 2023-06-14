@@ -31,13 +31,13 @@ function createVinePlugin(options: VinePluginOptions = {}): Plugin {
       code,
       fileId,
       {
-        // TODO: ?
+        // 将编译上下文对象中的选项配置设置到 compilerOptions 中
         onOptionsResolved: cb => cb(compilerCtx.options),
         // 发生错误时钩子，将错误信息存入上下文的 vineCompileErrors 中
         onError: errMsg => compilerCtx.vineCompileErrors.push(errMsg),
         // 发生警告时钩子，将错误信息存入上下文的 vineCompileWarnings 中
         onWarn: warnMsg => compilerCtx.vineCompileWarnings.push(warnMsg),
-        // TODO: ?
+        // 每解析一个 .vine.ts 都会将其文件上下文对象 保存到编译上下文的 fileCtxMap 中
         onBindFileCtx: (fileId, fileCtx) => compilerCtx.fileCtxMap.set(fileId, fileCtx),
         // 验证结束的钩子，
         // vine 会分析 vfc 的代码上下文，在顶层作用域中不允许有响应式变量
