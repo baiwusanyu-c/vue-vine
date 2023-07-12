@@ -4,7 +4,7 @@ import hashId from 'hash-sum'
 import type { VineCompilerHooks, VineFileCtx, VineFnCompCtx, VinePropMeta, VineStyleLang, VineStyleMeta, VineUserImport } from './types'
 import { VineBindingTypes } from './types'
 import { BOOL_KINDS, TS_NODE_KINDS, VINE_PROP_OPTIONAL_CALL, VINE_PROP_WITH_DEFAULT_CALL, VINE_STYLE_SCOPED_CALL } from './constants'
-import { ruleHasMacroCallExpr, ruleIdInsideMacroMayReferenceSetupLocal, ruleImportClause, ruleImportNamespace, ruleImportSpecifier, ruleImportStmt, ruleValidVinePropDeclaration, ruleVineEmitsCall, ruleVineEmitsDeclaration, ruleVineExposeCall, ruleVineFunctionComponentMatching, ruleVineOptionsCall, ruleVinePropValidatorFnBody, ruleVineStyleCall, ruleVineTaggedTemplateString } from './ast-grep/rules-for-script'
+import { ruleHasMacroCallExpr, ruleIdInsideMacroMayReferenceSetupLocal, ruleImportClause, ruleImportNamespace, ruleImportSpecifier, ruleImportStmt, ruleTopLevelDeclarationNames, ruleValidVinePropDeclaration, ruleVineCECall, ruleVineEmitsCall, ruleVineEmitsDeclaration, ruleVineExposeCall, ruleVineFunctionComponentMatching, ruleVineOptionsCall, ruleVinePropValidatorFnBody, ruleVineStyleCall, ruleVineTaggedTemplateString } from './ast-grep/rules-for-script'
 import { vineWarn } from './diagnostics'
 import { parseCssVars } from './style/analyze-css-vars'
 import { isNotUselessPunc } from './utils'
@@ -132,6 +132,7 @@ function analyzeVinePropsByFormalParams(
       }
 
       vineFnCompCtx.props[propName] = propMeta
+      vineFnCompCtx.bindings[propName] = VineBindingTypes.PROPS
     })
 }
 
@@ -177,6 +178,7 @@ function analyzeVinePropsByMacroCall(
 
     // Collect prop's information
     vineFnCompCtx.props[propName] = propMeta
+    vineFnCompCtx.bindings[propName] = VineBindingTypes.SETUP_REF
   }
 }
 
@@ -517,7 +519,10 @@ function analyzeLexicalDeclNode(
     const varNameNode = varDeclarator.field('name')!
     const declValueNode = unwrapTSNode(varDeclarator.field('value')!)
     if (varNameNode.kind() === 'identifier') {
-      if (isCallOf(declValueNode, userReactiveAlias)) {
+      if (isAllLiteral || (isConst && isStaticSgNode(declValueNode))) {
+        bindingType = VineBindingTypes.LITERAL_CONST
+      }
+      else if (isCallOf(declValueNode, userReactiveAlias)) {
         // treat reactive() calls as let since it's meant to be mutable
         bindingType = isConst
           ? VineBindingTypes.SETUP_REACTIVE_CONST
@@ -672,6 +677,24 @@ function analyzeVineBindings(
         ? VineBindingTypes.SETUP_CONST
         : VineBindingTypes.SETUP_MAYBE_REF
   }
+
+  // #32 Append all valid declarations in top level scope
+  // to current VCF's bindings, as LITERAL_CONST, telling the
+  // Vue template compiler to remain them as is.
+  const allTopLevelDeclNames = fileCtx.sgRoot.findAll(ruleTopLevelDeclarationNames)
+  for (const declName of allTopLevelDeclNames) {
+    vineFnCompCtx.bindings[declName.text()] = VineBindingTypes.LITERAL_CONST
+  }
+}
+
+function analyzeVineCE(
+  analyzeCtx: AnalyzeCtx,
+  fnItselfSgNode: SgNode,
+) {
+  const [,, vineFnCompCtx] = analyzeCtx
+  if (fnItselfSgNode.find(ruleVineCECall)) {
+    vineFnCompCtx.isVineCE = true
+  }
 }
 
 function analyzeDifferentKindVineFunctionDecls(
@@ -713,6 +736,7 @@ function analyzeDifferentKindVineFunctionDecls(
     analyzeVineExpose,
     analyzeVineOptions,
     analyzeVineBindings,
+    analyzeVineCE,
     analyzeVineStyle,
   ].forEach(fn => fn(allCtx, fnItselfSgNode))
 }
@@ -745,6 +769,7 @@ function buildVineFnCompCtx(
     fnValueNode: vineFnCompDecl,
     template: vineTemolateSgNode,
     cssBindings: null,
+    isVineCE: false,
   }
 
   const analyzeCtx: AnalyzeCtx = [compilerHooks, vineFileCtx, vineFnCompCtx]

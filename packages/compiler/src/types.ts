@@ -14,6 +14,7 @@ export interface VineCompilerHooks {
   onWarn: (warn: VineDiagnostic) => void
   onBindFileCtx?: (fileId: string, fileCtx: VineFileCtx) => void
   onValidateEnd?: () => void
+  onAnalysisEnd?: () => void
 }
 
 export interface VineCompilerOptions {
@@ -94,6 +95,8 @@ export interface VineFnCompCtx {
   template: SgNode
   scopeId: string
   cssBindings: Record<string, string | null> | null
+  // is web component
+  isVineCE: boolean
 }
 
 // Enums:

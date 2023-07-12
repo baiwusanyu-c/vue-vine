@@ -64,6 +64,7 @@ export const vineScriptRuleUtils = {
   vineExposeCall: macroCallPattern('vineExpose'),
   vineEmitsCall: macroCallPattern('vineEmits'),
   vineOptionsCall: macroCallPattern('vineOptions'),
+  vineCECall: macroCallPattern('vineCE'),
   validVineEmitsCall: validMacroCallPattern('vineEmitsCall'),
   validVineOptionsCall: validMacroCallPattern('vineOptionsCall'),
   idInsideMacroMayReferenceSetupLocal: {
@@ -117,17 +118,6 @@ export const vineScriptRuleUtils = {
       matches: 'vineEmitsCall',
     },
   },
-  setupVariableDeclaration: {
-    any: [
-      {
-        kind: 'variable_declarator',
-      },
-      {
-        kind: 'pair_pattern',
-      },
-    ],
-  },
-  // 识别 vine`<div></div>` 的匹配规则
   vineTaggedTemplateString: {
     kind: 'call_expression',
     all: [
@@ -154,7 +144,10 @@ export const vineScriptRuleUtils = {
         kind: 'lexical_declaration',
         has: {
           stopBy: 'end',
-          kind: 'arrow_function',
+          any: [
+            { kind: 'function' },
+            { kind: 'arrow_function' },
+          ],
         },
       },
     ],
@@ -258,6 +251,9 @@ export const vineScriptRuleUtils = {
         {
           regex: 'vineOptions',
         },
+        {
+          regex: 'vineCE',
+        },
       ],
     },
   },
@@ -268,6 +264,54 @@ export const vineScriptRuleUtils = {
       regex: 'ref',
     },
   },
+  topLevelDeclarationNames: {
+    any: [
+      {
+        kind: 'identifier',
+        inside: {
+          kind: 'variable_declarator',
+          inside: {
+            any: [
+              {
+                kind: 'lexical_declaration',
+              },
+              {
+                kind: 'variable_declaration',
+              },
+            ],
+            inside: {
+              kind: 'program',
+            },
+          },
+        },
+      },
+      {
+        kind: 'identifier',
+        inside: {
+          kind: 'function_declaration',
+          inside: {
+            kind: 'program',
+          },
+        },
+      },
+      {
+        kind: 'type_identifier',
+        inside: {
+          any: [
+            {
+              kind: 'class_declaration',
+            },
+            {
+              kind: 'abstract_class_declaration',
+            },
+          ],
+          inside: {
+            kind: 'program',
+          },
+        },
+      },
+    ],
+  },
 
   // Rules for find invalid.
   invalidOutsideVineStyleCall: invalidMacroCallNotInsideVineFunctionComponent('vineStyleCall'),
@@ -275,6 +319,7 @@ export const vineScriptRuleUtils = {
   invalidOutsideVinePropCall: invalidMacroCallNotInsideVineFunctionComponent('vinePropCall'),
   invalidOutsideVineEmitsCall: invalidMacroCallNotInsideVineFunctionComponent('vineEmitsCall'),
   invalidOutsideVineOptionsCall: invalidMacroCallNotInsideVineFunctionComponent('vineOptionsCall'),
+  invalidOutsideVineCECall: invalidMacroCallNotInsideVineFunctionComponent('vineCECall'),
   invalidNoDeclVinePropCall: {
     matches: 'vinePropCall',
     not: {
@@ -330,7 +375,7 @@ export const ruleInvalidRootScopeStmt = fastCreateMatchRuleByUtils(vineScriptRul
 export const ruleIdInsideMacroMayReferenceSetupLocal = fastCreateMatchRuleByUtils(vineScriptRuleUtils, 'idInsideMacroMayReferenceSetupLocal')
 export const ruleHasMacroCallExpr = fastCreateMatchRuleByUtils(vineScriptRuleUtils, 'hasMacroCallExpr')
 export const ruleHasVueRefCallExpr = fastCreateMatchRuleByUtils(vineScriptRuleUtils, 'hasVueRefCallExpr')
-export const ruleSetupVariableDeclaration = fastCreateMatchRuleByUtils(vineScriptRuleUtils, 'setupVariableDeclaration')
+export const ruleTopLevelDeclarationNames = fastCreateMatchRuleByUtils(vineScriptRuleUtils, 'topLevelDeclarationNames')
 export const ruleVineTaggedTemplateString = directlyMatchUtil(vineScriptRuleUtils, 'vineTaggedTemplateString')
 export const ruleImportStmt = directlyMatchUtil(vineScriptRuleUtils, 'importStmt')
 export const ruleImportClause = directlyMatchUtil(vineScriptRuleUtils, 'importClause')
@@ -341,6 +386,7 @@ export const ruleVineStyleCall = directlyMatchUtil(vineScriptRuleUtils, 'vineSty
 export const ruleVinePropCall = directlyMatchUtil(vineScriptRuleUtils, 'vinePropCall')
 export const ruleVineExposeCall = directlyMatchUtil(vineScriptRuleUtils, 'vineExposeCall')
 export const ruleVineOptionsCall = directlyMatchUtil(vineScriptRuleUtils, 'vineOptionsCall')
+export const ruleVineCECall = directlyMatchUtil(vineScriptRuleUtils, 'vineCECall')
 
 export const ruleHasTemplateStringInterpolation: NapiConfig = {
   rule: {
@@ -357,6 +403,7 @@ export const ruleInvalidOutsideMacroCalls: NapiConfig = {
       { matches: 'invalidOutsideVineExposeCall' },
       { matches: 'invalidOutsideVineEmitsCall' },
       { matches: 'invalidOutsideVineOptionsCall' },
+      { matches: 'invalidOutsideVineCECall' },
     ],
   },
 }

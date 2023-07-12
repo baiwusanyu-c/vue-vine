@@ -14,17 +14,24 @@ import { parseQuery } from './src/parse-query'
 import { handleHotUpdate } from './src/hot-update'
 import { QUERY_TYPE_STYLE } from './src/constants'
 
-type VinePluginOptions = Omit<VineCompilerOptions, 'inlineTemplate'>
-
-function createVinePlugin(options: VinePluginOptions = {}): Plugin {
-  // 创建编译上下文对象
+function createVinePlugin(options: VineCompilerOptions = {}): Plugin {
   const compilerCtx = createCompilerCtx({
+    // 创建编译上下文对象
     ...options,
     // 是否为内联模板编译模式
-    inlineTemplate: process.env.NODE_ENV === 'production',
+    inlineTemplate: options.inlineTemplate ?? process.env.NODE_ENV === 'production',
   })
-
-  // 开始进行编译
+  const panicOnCompilerError = () => {
+    if (compilerCtx.vineCompileErrors.length > 0) {
+      const allErrMsg = compilerCtx.vineCompileErrors
+        .map(diagnositc => diagnositc.full)
+        .join('\n')
+      compilerCtx.vineCompileErrors.length = 0
+      throw new Error(
+        `Vue Vine compilation failed:\n${allErrMsg}`,
+      )
+    }
+  }
   const runCompileScript = (code: string, fileId: string) => {
     // 对单个 vine.ts 模块进行编译
     const vineFileCtx = compileVineTypeScriptFile(
@@ -42,17 +49,8 @@ function createVinePlugin(options: VinePluginOptions = {}): Plugin {
         // 验证结束的钩子，
         // vine 会分析 vfc 的代码上下文，在顶层作用域中不允许有响应式变量
         // 如果存在非法代码，则会在这个钩子中检测报错。
-        onValidateEnd: () => {
-          if (compilerCtx.vineCompileErrors.length > 0) {
-            const allErrMsg = compilerCtx.vineCompileErrors
-              .map(diagnositc => diagnositc.full)
-              .join('\n')
-            compilerCtx.vineCompileErrors.length = 0
-            throw new Error(
-              `Vue Vine compilation failed:\n${allErrMsg}`,
-            )
-          }
-        },
+        onValidateEnd: panicOnCompilerError,
+        onAnalysisEnd: panicOnCompilerError,
       },
     )
 
@@ -145,5 +143,4 @@ function createVinePlugin(options: VinePluginOptions = {}): Plugin {
 
 export {
   createVinePlugin as vinePlugin,
-  VinePluginOptions,
 }

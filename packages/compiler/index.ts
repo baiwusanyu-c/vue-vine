@@ -123,6 +123,7 @@ export function compileVineTypeScriptFile(
   // 2. Analysis
   // TODO
   analyzeVine([compilerHooks, vineFileCtx], vineFnCompDecls)
+  compilerHooks.onAnalysisEnd?.()
 
   // 3. Codegen, or call it "transform"
   // 代码生成
